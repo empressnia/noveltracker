@@ -417,14 +417,17 @@
         </div>
 
         <div class="setup-panel" id="setupPanel">
-            <h3>🔧 Supabase Setup Required</h3>
-            <p>To enable shared data across users, please enter your Supabase credentials:</p>
-            <div class="setup-inputs">
-                <input type="url" id="supabaseUrl" placeholder="Your Supabase URL (https://xxx.supabase.co)">
-                <input type="text" id="supabaseKey" placeholder="Your Supabase Anon Key">
-                <button class="btn btn-primary" onclick="setupSupabase()">Connect</button>
-            </div>
-            <p><small>Don't have Supabase? <a href="https://supabase.com" target="_blank">Create a free account</a> and get your credentials from the API settings.</small></p>
+            <h3>🔧 Database Connection Issue</h3>
+            <p>Unable to connect to the database automatically. This usually means the database tables haven't been created yet.</p>
+            <p><strong>Quick Fix:</strong> Go to your <a href="https://supabase.com/dashboard/project/tejilvscpqrtcwzekhfp/sql" target="_blank">Supabase SQL Editor</a> and run the table creation script.</p>
+            <details>
+                <summary>Or manually enter different credentials:</summary>
+                <div class="setup-inputs" style="margin-top: 15px;">
+                    <input type="url" id="supabaseUrl" placeholder="Your Supabase URL" value="https://tejilvscpqrtcwzekhfp.supabase.co">
+                    <input type="text" id="supabaseKey" placeholder="Your Supabase Anon Key" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlamlsdnNjcHFydGN3emVraGZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgwMTc4MTYsImV4cCI6MjA2MzU5MzgxNn0.lqLqhDvv8kBoZY9dQwjnUu4vVt-cS_bVtQ8kt3o0Ge8">
+                    <button class="btn btn-primary" onclick="setupSupabase()">Connect</button>
+                </div>
+            </details>
         </div>
 
         <div id="errorPanel" class="error" style="display: none;"></div>
@@ -454,19 +457,14 @@
         let data = { categories: [] };
         let isConnected = false;
 
+        // Supabase credentials (hardcoded)
+        const SUPABASE_URL = 'https://tejilvscpqrtcwzekhfp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlamlsdnNjcHFydGN3emVraGZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgwMTc4MTYsImV4cCI6MjA2MzU5MzgxNn0.lqLqhDvv8kBoZY9dQwjnUu4vVt-cS_bVtQ8kt3o0Ge8';
+
         // Initialize app
         async function init() {
-            // Check if Supabase credentials are saved
-            const savedUrl = localStorage.getItem('supabaseUrl');
-            const savedKey = localStorage.getItem('supabaseKey');
-            
-            if (savedUrl && savedKey) {
-                document.getElementById('supabaseUrl').value = savedUrl;
-                document.getElementById('supabaseKey').value = savedKey;
-                await setupSupabase();
-            } else {
-                showSetupPanel();
-            }
+            // Auto-connect with hardcoded credentials
+            await setupSupabaseWithCredentials();
         }
 
         // Show setup panel
@@ -476,7 +474,37 @@
             document.getElementById('appContent').style.display = 'none';
         }
 
-        // Setup Supabase connection
+        // Setup Supabase connection with hardcoded credentials
+        async function setupSupabaseWithCredentials() {
+            try {
+                // Create Supabase client with hardcoded credentials
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                
+                // Test connection and create tables if needed
+                await initializeDatabase();
+                
+                // Load data
+                await loadData();
+                
+                // Setup real-time subscriptions
+                setupRealtimeSubscriptions();
+                
+                // Show app
+                document.getElementById('loadingPanel').style.display = 'none';
+                document.getElementById('appContent').style.display = 'block';
+                
+                updateConnectionStatus(true);
+                hideError();
+                
+            } catch (error) {
+                console.error('Supabase setup error:', error);
+                showError('Failed to connect to database. Please check if the database tables are set up correctly.');
+                updateConnectionStatus(false);
+                showSetupPanel();
+            }
+        }
+
+        // Setup Supabase connection (for manual setup if needed)
         async function setupSupabase() {
             const url = document.getElementById('supabaseUrl').value.trim();
             const key = document.getElementById('supabaseKey').value.trim();
