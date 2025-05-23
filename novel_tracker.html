@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novel Translation Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 15px;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            display: block;
+        }
+
+        .setup-panel {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .setup-panel.show {
+            display: block;
+        }
+
+        .setup-panel h3 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+
+        .setup-inputs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .setup-inputs input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+
+        .status-connected {
+            background-color: #28a745;
+        }
+
+        .status-disconnected {
+            background-color: #dc3545;
+        }
+
+        .add-section {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .add-category {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        input[type="text"], input[type="url"] {
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        input[type="text"]:focus, input[type="url"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #666;
+            border: 2px solid #e1e5e9;
+        }
+
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .search-box {
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 20px;
+        }
+
+        .categories {
+            display: grid;
+            gap: 25px;
+        }
+
+        .category {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e1e5e9;
+        }
+
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f1f3f4;
+        }
+
+        .category-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .category-stats {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .category-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+
+        .novels-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .novel-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .novel-item:hover {
+            background: #e9ecef;
+            transform: translateY(-1px);
+        }
+
+        .novel-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            transform: scale(1.2);
+        }
+
+        .novel-content {
+            flex: 1;
+            display: flex;
+            gap: 20px;
+        }
+
+        .novel-info {
+            flex: 1;
+        }
+
+        .novel-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .novel-title:hover {
+            color: #667eea;
+        }
+
+        .novel-url {
+            color: #666;
+            font-size: 0.9rem;
+            word-break: break-all;
+        }
+
+        .novel-embed {
+            width: 200px;
+            height: 120px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e1e5e9;
+            flex-shrink: 0;
+        }
+
+        .novel-embed iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .novel-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-icon {
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .btn-delete {
+            background: #ff4757;
+            color: white;
+        }
+
+        .add-novel-form {
+            display: none;
+            gap: 10px;
+            margin-top: 15px;
+            padding: 20px;
+            background: #f1f3f4;
+            border-radius: 10px;
+            flex-wrap: wrap;
+        }
+
+        .add-novel-form.active {
+            display: flex;
+        }
+
+        .collapse-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .collapsed .collapse-icon {
+            transform: rotate(-90deg);
+        }
+
+        .collapsed .novels-list {
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .novel-content {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .novel-embed {
+                width: 100%;
+                height: 150px;
+            }
+
+            .add-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .stats {
+                gap: 15px;
+            }
+
+            .stat-card {
+                min-width: 100px;
+            }
+
+            .setup-inputs {
+                flex-direction: column;
+            }
+
+            .setup-inputs input {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 Novel Translation Tracker <span class="status-indicator" id="connectionStatus"></span></h1>
+            <div class="stats">
+                <div class="stat-card">
+                    <span class="stat-number" id="totalNovels">0</span>
+                    <span>Total Novels</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" id="completedNovels">0</span>
+                    <span>Completed</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" id="totalCategories">0</span>
+                    <span>Categories</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="setup-panel" id="setupPanel">
+            <h3>🔧 Supabase Setup Required</h3>
+            <p>To enable shared data across users, please enter your Supabase credentials:</p>
+            <div class="setup-inputs">
+                <input type="url" id="supabaseUrl" placeholder="Your Supabase URL (https://xxx.supabase.co)">
+                <input type="text" id="supabaseKey" placeholder="Your Supabase Anon Key">
+                <button class="btn btn-primary" onclick="setupSupabase()">Connect</button>
+            </div>
+            <p><small>Don't have Supabase? <a href="https://supabase.com" target="_blank">Create a free account</a> and get your credentials from the API settings.</small></p>
+        </div>
+
+        <div id="errorPanel" class="error" style="display: none;"></div>
+
+        <div id="appContent" style="display: none;">
+            <div class="add-section">
+                <div class="add-category">
+                    <input type="text" id="newCategoryName" placeholder="New category name (e.g., Naruto)">
+                    <button class="btn btn-primary" onclick="addCategory()">Add Category</button>
+                </div>
+                <input type="text" id="searchInput" placeholder="Search novels..." class="search-box" oninput="filterNovels()">
+            </div>
+
+            <div class="categories" id="categoriesContainer">
+                <!-- Categories will be dynamically added here -->
+            </div>
+        </div>
+
+        <div class="loading" id="loadingPanel">
+            <p>⚡ Loading your novel collection...</p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/supabase-js/2.39.7/supabase.min.js"></script>
+    <script>
+        let supabase = null;
+        let data = { categories: [] };
+        let isConnected = false;
+
+        // Initialize app
+        async function init() {
+            // Check if Supabase credentials are saved
+            const savedUrl = localStorage.getItem('supabaseUrl');
+            const savedKey = localStorage.getItem('supabaseKey');
+            
+            if (savedUrl && savedKey) {
+                document.getElementById('supabaseUrl').value = savedUrl;
+                document.getElementById('supabaseKey').value = savedKey;
+                await setupSupabase();
+            } else {
+                showSetupPanel();
+            }
+        }
+
+        // Show setup panel
+        function showSetupPanel() {
+            document.getElementById('setupPanel').classList.add('show');
+            document.getElementById('loadingPanel').style.display = 'none';
+            document.getElementById('appContent').style.display = 'none';
+        }
+
+        // Setup Supabase connection
+        async function setupSupabase() {
+            const url = document.getElementById('supabaseUrl').value.trim();
+            const key = document.getElementById('supabaseKey').value.trim();
+            
+            if (!url || !key) {
+                showError('Please enter both Supabase URL and API key');
+                return;
+            }
+
+            try {
+                // Create Supabase client
+                supabase = window.supabase.createClient(url, key);
+                
+                // Test connection and create tables if needed
+                await initializeDatabase();
+                
+                // Save credentials
+                localStorage.setItem('supabaseUrl', url);
+                localStorage.setItem('supabaseKey', key);
+                
+                // Hide setup panel and show app
+                document.getElementById('setupPanel').classList.remove('show');
+                document.getElementById('loadingPanel').style.display = 'block';
+                
+                // Load data
+                await loadData();
+                
+                // Setup real-time subscriptions
+                setupRealtimeSubscriptions();
+                
+                // Show app
+                document.getElementById('loadingPanel').style.display = 'none';
+                document.getElementById('appContent').style.display = 'block';
+                
+                updateConnectionStatus(true);
+                hideError();
+                
+            } catch (error) {
+                console.error('Supabase setup error:', error);
+                showError('Failed to connect to Supabase. Please check your credentials.');
+                updateConnectionStatus(false);
+            }
+        }
+
+        // Initialize database tables
+        async function initializeDatabase() {
+            // Create categories table
+            const { error: categoriesError } = await supabase.rpc('create_categories_table');
+            
+            // Create novels table
+            const { error: novelsError } = await supabase.rpc('create_novels_table');
+            
+            // If RPC functions don't exist, that's okay - tables might already exist
+            // We'll test with a simple query instead
+            const { data, error } = await supabase.from('categories').select('*').limit(1);
+            
+            if (error && error.code === '42P01') {
+                // Table doesn't exist, create it manually
+                throw new Error('Database tables need to be created. Please run the SQL setup first.');
+            }
+        }
+
+        // Setup real-time subscriptions
+        function setupRealtimeSubscriptions() {
+            // Listen for categories changes
+            supabase
+                .channel('categories-changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
+                    loadData();
+                })
+                .subscribe();
+
+            // Listen for novels changes
+            supabase
+                .channel('novels-changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'novels' }, () => {
+                    loadData();
+                })
+                .subscribe();
+        }
+
+        // Load data from Supabase
+        async function loadData() {
+            try {
+                // Load categories
+                const { data: categories, error: catError } = await supabase
+                    .from('categories')
+                    .select('*')
+                    .order('created_at', { ascending: true });
+
+                if (catError) throw catError;
+
+                // Load novels
+                const { data: novels, error: novError } = await supabase
+                    .from('novels')
+                    .select('*')
+                    .order('created_at', { ascending: true });
+
+                if (novError) throw novError;
+
+                // Organize data
+                data.categories = categories.map(cat => ({
+                    ...cat,
+                    novels: novels.filter(novel => novel.category_id === cat.id),
+                    collapsed: false
+                }));
+
+                renderCategories();
+                updateStats();
+                
+            } catch (error) {
+                console.error('Load data error:', error);
+                showError('Failed to load data from database');
+            }
+        }
+
+        // Add new category
+        async function addCategory() {
+            const nameInput = document.getElementById('newCategoryName');
+            const name = nameInput.value.trim();
+            
+            if (!name) return;
+            
+            try {
+                const { error } = await supabase
+                    .from('categories')
+                    .insert({ name: name });
+                
+                if (error) throw error;
+                
+                nameInput.value = '';
+                
+            } catch (error) {
+                console.error('Add category error:', error);
+                if (error.code === '23505') {
+                    showError('Category already exists!');
+                } else {
+                    showError('Failed to add category');
+                }
+            }
+        }
+
+        // Delete category
+        async function deleteCategory(categoryId) {
+            if (!confirm('Are you sure you want to delete this category and all its novels?')) return;
+            
+            try {
+                // Delete novels first
+                await supabase.from('novels').delete().eq('category_id', categoryId);
+                
+                // Delete category
+                const { error } = await supabase.from('categories').delete().eq('id', categoryId);
+                
+                if (error) throw error;
+                
+            } catch (error) {
+                console.error('Delete category error:', error);
+                showError('Failed to delete category');
+            }
+        }
+
+        // Toggle category collapse (local only)
+        function toggleCategory(categoryId) {
+            const category = data.categories.find(cat => cat.id === categoryId);
+            if (category) {
+                category.collapsed = !category.collapsed;
+                renderCategories();
+            }
+        }
+
+        // Show add novel form
+        function showAddNovelForm(categoryId) {
+            const form = document.getElementById(`addForm${categoryId}`);
+            form.classList.toggle('active');
+        }
+
+        // Add novel to category
+        async function addNovel(categoryId) {
+            const titleInput = document.getElementById(`novelTitle${categoryId}`);
+            const urlInput = document.getElementById(`novelUrl${categoryId}`);
+            
+            const title = titleInput.value.trim();
+            const url = urlInput.value.trim();
+            
+            if (!title) return;
+            
+            try {
+                const { error } = await supabase
+                    .from('novels')
+                    .insert({
+                        category_id: categoryId,
+                        title: title,
+                        url: url || null,
+                        completed: false
+                    });
+                
+                if (error) throw error;
+                
+                titleInput.value = '';
+                urlInput.value = '';
+                
+            } catch (error) {
+                console.error('Add novel error:', error);
+                showError('Failed to add novel');
+            }
+        }
+
+        // Toggle novel completion
+        async function toggleNovel(categoryId, novelId) {
+            const category = data.categories.find(cat => cat.id === categoryId);
+            const novel = category?.novels.find(n => n.id === novelId);
+            
+            if (!novel) return;
+            
+            try {
+                const { error } = await supabase
+                    .from('novels')
+                    .update({ completed: !novel.completed })
+                    .eq('id', novelId);
+                
+                if (error) throw error;
+                
+            } catch (error) {
+                console.error('Toggle novel error:', error);
+                showError('Failed to update novel status');
+            }
+        }
+
+        // Delete novel
+        async function deleteNovel(categoryId, novelId) {
+            try {
+                const { error } = await supabase.from('novels').delete().eq('id', novelId);
+                
+                if (error) throw error;
+                
+            } catch (error) {
+                console.error('Delete novel error:', error);
+                showError('Failed to delete novel');
+            }
+        }
+
+        // Update connection status indicator
+        function updateConnectionStatus(connected) {
+            const indicator = document.getElementById('connectionStatus');
+            indicator.className = `status-indicator ${connected ? 'status-connected' : 'status-disconnected'}`;
+            isConnected = connected;
+        }
+
+        // Show error message
+        function showError(message) {
+            const errorPanel = document.getElementById('errorPanel');
+            errorPanel.textContent = message;
+            errorPanel.style.display = 'block';
+        }
+
+        // Hide error message
+        function hideError() {
+            document.getElementById('errorPanel').style.display = 'none';
+        }
+
+        // Generate embed preview
+        function generateEmbed(url) {
+            if (!url) return '';
+            
+            return `<iframe src="data:text/html,<div style='padding:10px;font-family:Arial;font-size:12px;color:#666;text-align:center;background:#f5f5f5;height:100px;display:flex;align-items:center;justify-content:center;'>Preview not available<br><small>Click title to open</small></div>" frameborder="0"></iframe>`;
+        }
+
+        // Filter novels based on search
+        function filterNovels() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const categories = document.querySelectorAll('.category');
+            
+            categories.forEach(categoryEl => {
+                const novels = categoryEl.querySelectorAll('.novel-item');
+                let hasVisibleNovels = false;
+                
+                novels.forEach(novelEl => {
+                    const title = novelEl.querySelector('.novel-title').textContent.toLowerCase();
+                    if (title.includes(searchTerm) || searchTerm === '') {
+                        novelEl.style.display = 'flex';
+                        hasVisibleNovels = true;
+                    } else {
+                        novelEl.style.display = 'none';
+                    }
+                });
+                
+                categoryEl.style.display = hasVisibleNovels || searchTerm === '' ? 'block' : 'none';
+            });
+        }
+
+        // Render all categories
+        function renderCategories() {
+            const container = document.getElementById('categoriesContainer');
+            container.innerHTML = '';
+            
+            data.categories.forEach(category => {
+                const completed = category.novels.filter(n => n.completed).length;
+                const total = category.novels.length;
+                
+                const categoryEl = document.createElement('div');
+                categoryEl.className = `category ${category.collapsed ? 'collapsed' : ''}`;
+                categoryEl.innerHTML = `
+                    <div class="category-header">
+                        <div class="category-title" onclick="toggleCategory(${category.id})">
+                            <span class="collapse-icon">▼</span>
+                            ${category.name}
+                        </div>
+                        <div class="category-stats">${completed}/${total} completed</div>
+                        <div class="category-actions">
+                            <button class="btn btn-secondary btn-small" onclick="showAddNovelForm(${category.id})">+ Add Novel</button>
+                            <button class="btn-icon btn-delete" onclick="deleteCategory(${category.id})" title="Delete Category">×</button>
+                        </div>
+                    </div>
+                    
+                    <div class="add-novel-form" id="addForm${category.id}">
+                        <input type="text" id="novelTitle${category.id}" placeholder="Novel title">
+                        <input type="url" id="novelUrl${category.id}" placeholder="Novel URL (optional)">
+                        <button class="btn btn-primary" onclick="addNovel(${category.id})">Add</button>
+                    </div>
+                    
+                    <div class="novels-list">
+                        ${category.novels.map(novel => `
+                            <div class="novel-item">
+                                <input type="checkbox" class="novel-checkbox" ${novel.completed ? 'checked' : ''} 
+                                       onchange="toggleNovel(${category.id}, ${novel.id})">
+                                <div class="novel-content">
+                                    <div class="novel-info">
+                                        <a href="${novel.url || '#'}" target="_blank" class="novel-title" 
+                                           ${!novel.url ? 'style="cursor:default; color:#333;"' : ''}
+                                           ${!novel.url ? 'onclick="return false;"' : ''}>
+                                            ${novel.title}
+                                        </a>
+                                        ${novel.url ? `<div class="novel-url">${novel.url}</div>` : ''}
+                                    </div>
+                                    ${novel.url ? `<div class="novel-embed">${generateEmbed(novel.url)}</div>` : ''}
+                                </div>
+                                <div class="novel-actions">
+                                    <button class="btn-icon btn-delete" onclick="deleteNovel(${category.id}, ${novel.id})" title="Delete Novel">×</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                container.appendChild(categoryEl);
+            });
+        }
+
+        // Update statistics
+        function updateStats() {
+            const totalNovels = data.categories.reduce((sum, cat) => sum + cat.novels.length, 0);
+            const completedNovels = data.categories.reduce((sum, cat) => 
+                sum + cat.novels.filter(n => n.completed).length, 0);
+            
+            document.getElementById('totalNovels').textContent = totalNovels;
+            document.getElementById('completedNovels').textContent = completedNovels;
+            document.getElementById('totalCategories').textContent = data.categories.length;
+        }
+
+        // Handle Enter key in input fields
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                if (e.target.id === 'newCategoryName') {
+                    addCategory();
+                } else if (e.target.id.startsWith('novelTitle') || e.target.id.startsWith('novelUrl')) {
+                    const categoryId = e.target.id.match(/\d+/)[0];
+                    addNovel(parseInt(categoryId));
+                } else if (e.target.id === 'supabaseUrl' || e.target.id === 'supabaseKey') {
+                    setupSupabase();
+                }
+            }
+        });
+
+        // Initialize app
+        init();
+    </script>
+</body>
+</html>
