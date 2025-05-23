@@ -451,9 +451,9 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/supabase-js/2.39.7/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        let supabase = null;
+        let supabaseLib = null;
         let data = { categories: [] };
         let isConnected = false;
 
@@ -463,8 +463,10 @@
 
         // Initialize app
         async function init() {
-            // Auto-connect with hardcoded credentials
-            await setupSupabaseWithCredentials();
+            // Wait a bit for Supabase library to load
+            setTimeout(async () => {
+                await setupSupabaseWithCredentials();
+            }, 100);
         }
 
         // Show setup panel
@@ -477,8 +479,14 @@
         // Setup Supabase connection with hardcoded credentials
         async function setupSupabaseWithCredentials() {
             try {
-                // Create Supabase client with hardcoded credentials
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                // Wait for Supabase to load
+                if (typeof window.supabase === 'undefined') {
+                    throw new Error('Supabase library failed to load');
+                }
+                
+                // Create Supabase client with hardcoded credentials using correct CDN syntax
+                const { createClient } = window.supabase;
+                supabaseLib = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 
                 // Test connection and create tables if needed
                 await initializeDatabase();
@@ -498,7 +506,7 @@
                 
             } catch (error) {
                 console.error('Supabase setup error:', error);
-                showError('Failed to connect to database. Please check if the database tables are set up correctly.');
+                showError(`Failed to connect to database: ${error.message}. Please check if the database tables are set up correctly.`);
                 updateConnectionStatus(false);
                 showSetupPanel();
             }
@@ -516,7 +524,7 @@
 
             try {
                 // Create Supabase client
-                supabase = window.supabase.createClient(url, key);
+                supabaseLib = window.supabase.createClient(url, key);
                 
                 // Test connection and create tables if needed
                 await initializeDatabase();
@@ -551,15 +559,8 @@
 
         // Initialize database tables
         async function initializeDatabase() {
-            // Create categories table
-            const { error: categoriesError } = await supabase.rpc('create_categories_table');
-            
-            // Create novels table
-            const { error: novelsError } = await supabase.rpc('create_novels_table');
-            
-            // If RPC functions don't exist, that's okay - tables might already exist
-            // We'll test with a simple query instead
-            const { data, error } = await supabase.from('categories').select('*').limit(1);
+            // Test with a simple query instead of RPC
+            const { data, error } = await supabaseLib.from('categories').select('*').limit(1);
             
             if (error && error.code === '42P01') {
                 // Table doesn't exist, create it manually
@@ -570,7 +571,7 @@
         // Setup real-time subscriptions
         function setupRealtimeSubscriptions() {
             // Listen for categories changes
-            supabase
+            supabaseLib
                 .channel('categories-changes')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
                     loadData();
@@ -578,7 +579,7 @@
                 .subscribe();
 
             // Listen for novels changes
-            supabase
+            supabaseLib
                 .channel('novels-changes')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'novels' }, () => {
                     loadData();
@@ -590,7 +591,7 @@
         async function loadData() {
             try {
                 // Load categories
-                const { data: categories, error: catError } = await supabase
+                const { data: categories, error: catError } = await supabaseLib
                     .from('categories')
                     .select('*')
                     .order('created_at', { ascending: true });
@@ -598,7 +599,7 @@
                 if (catError) throw catError;
 
                 // Load novels
-                const { data: novels, error: novError } = await supabase
+                const { data: novels, error: novError } = await supabaseLib
                     .from('novels')
                     .select('*')
                     .order('created_at', { ascending: true });
@@ -629,7 +630,7 @@
             if (!name) return;
             
             try {
-                const { error } = await supabase
+                const { error } = await supabaseLib
                     .from('categories')
                     .insert({ name: name });
                 
@@ -653,10 +654,10 @@
             
             try {
                 // Delete novels first
-                await supabase.from('novels').delete().eq('category_id', categoryId);
+                await supabaseLib.from('novels').delete().eq('category_id', categoryId);
                 
                 // Delete category
-                const { error } = await supabase.from('categories').delete().eq('id', categoryId);
+                const { error } = await supabaseLib.from('categories').delete().eq('id', categoryId);
                 
                 if (error) throw error;
                 
@@ -692,7 +693,7 @@
             if (!title) return;
             
             try {
-                const { error } = await supabase
+                const { error } = await supabaseLib
                     .from('novels')
                     .insert({
                         category_id: categoryId,
@@ -720,7 +721,7 @@
             if (!novel) return;
             
             try {
-                const { error } = await supabase
+                const { error } = await supabaseLib
                     .from('novels')
                     .update({ completed: !novel.completed })
                     .eq('id', novelId);
@@ -736,7 +737,7 @@
         // Delete novel
         async function deleteNovel(categoryId, novelId) {
             try {
-                const { error } = await supabase.from('novels').delete().eq('id', novelId);
+                const { error } = await supabaseLib.from('novels').delete().eq('id', novelId);
                 
                 if (error) throw error;
                 
